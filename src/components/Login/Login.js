@@ -31,6 +31,8 @@ const Login = (props) => {
     setEnteredPassword(event.target.value);
   };
 
+  // Here we depend on a state when we update another state. Not good practice. We could combine the
+  // states into one so we can use the function format when we update, or use useRecuder.
   const validateEmailHandler = () => {
     setEmailIsValid(enteredEmail.includes("@"));
   };

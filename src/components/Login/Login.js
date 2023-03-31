@@ -1,30 +1,52 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useReducer } from "react";
 
 import Card from "../UI/Card/Card";
 import classes from "./Login.module.css";
 import Button from "../UI/Button/Button";
 
+const emailReducer = (currentState, action) => {
+  if (action.type === "USER_INPUT") {
+    console.log("user input");
+    return {
+      value: action.value,
+      isValid: action.value.includes("@"),
+    };
+  }
+  if (action.type === "INPUT_BLUR") {
+    console.log("input blur");
+    return {
+      value: currentState.value,
+      isValid: currentState.value.includes("@"),
+    };
+  }
+  return { value: "", isValid: false };
+};
+
 const Login = (props) => {
-  const [enteredEmail, setEnteredEmail] = useState("");
-  const [emailIsValid, setEmailIsValid] = useState();
   const [enteredPassword, setEnteredPassword] = useState("");
   const [passwordIsValid, setPasswordIsValid] = useState();
   const [formIsValid, setFormIsValid] = useState(false);
 
+  const [emailState, dispatchEmail] = useReducer(emailReducer, {
+    value: "",
+    isValid: undefined,
+  });
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      setFormIsValid(
-        enteredEmail.includes("@") && enteredPassword.trim().length > 6
-      );
+      setFormIsValid(emailState.isValid && enteredPassword.trim().length > 6);
       console.log(`DEBUG checking validity`);
     }, 500);
     return () => {
       clearTimeout(timer);
     };
-  }, [enteredEmail, enteredPassword]);
+  }, [emailState.value, enteredPassword]);
 
   const emailChangeHandler = (event) => {
-    setEnteredEmail(event.target.value);
+    dispatchEmail({
+      type: "USER_INPUT",
+      value: event.target.value,
+    });
   };
 
   const passwordChangeHandler = (event) => {
@@ -34,7 +56,10 @@ const Login = (props) => {
   // Here we depend on a state when we update another state. Not good practice. We could combine the
   // states into one so we can use the function format when we update, or use useRecuder.
   const validateEmailHandler = () => {
-    setEmailIsValid(enteredEmail.includes("@"));
+    dispatchEmail({
+      type: "INPUT_BLUR",
+      value: emailState.value,
+    });
   };
 
   const validatePasswordHandler = () => {
@@ -43,7 +68,7 @@ const Login = (props) => {
 
   const submitHandler = (event) => {
     event.preventDefault();
-    props.onLogin(enteredEmail, enteredPassword);
+    props.onLogin(emailState.value, enteredPassword);
   };
 
   return (
@@ -51,14 +76,14 @@ const Login = (props) => {
       <form onSubmit={submitHandler}>
         <div
           className={`${classes.control} ${
-            emailIsValid === false ? classes.invalid : ""
+            emailState.isValid === false ? classes.invalid : ""
           }`}
         >
           <label htmlFor="email">E-Mail</label>
           <input
             type="email"
             id="email"
-            value={enteredEmail}
+            value={emailState.value}
             onChange={emailChangeHandler}
             onBlur={validateEmailHandler}
           />

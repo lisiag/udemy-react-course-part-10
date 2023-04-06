@@ -6,14 +6,12 @@ import Button from "../UI/Button/Button";
 
 const emailReducer = (currentState, action) => {
   if (action.type === "USER_INPUT") {
-    console.log("user input");
     return {
       value: action.value,
       isValid: action.value.includes("@"),
     };
   }
   if (action.type === "INPUT_BLUR") {
-    console.log("input blur");
     return {
       value: currentState.value,
       isValid: currentState.value.includes("@"),
@@ -22,25 +20,43 @@ const emailReducer = (currentState, action) => {
   return { value: "", isValid: false };
 };
 
+const passwordReducer = (currentState, action) => {
+  if (action.type === "USER_INPUT") {
+    return {
+      value: action.value,
+      isValid: action.value.trim().length > 6,
+    };
+  }
+  if (action.type === "INPUT_BLUR") {
+    return {
+      value: currentState.value,
+      isValid: currentState.value.trim().length > 6,
+    };
+  }
+  return { value: "", isValid: false };
+};
+
 const Login = (props) => {
-  const [enteredPassword, setEnteredPassword] = useState("");
-  const [passwordIsValid, setPasswordIsValid] = useState();
   const [formIsValid, setFormIsValid] = useState(false);
 
   const [emailState, dispatchEmail] = useReducer(emailReducer, {
     value: "",
-    isValid: undefined,
+    isValid: null,
+  });
+
+  const [passwordState, dispatchPassword] = useReducer(passwordReducer, {
+    value: "",
+    isValid: null,
   });
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setFormIsValid(emailState.isValid && enteredPassword.trim().length > 6);
-      console.log(`DEBUG checking validity`);
+      setFormIsValid(emailState.isValid && passwordState.isValid);
     }, 500);
     return () => {
       clearTimeout(timer);
     };
-  }, [emailState.value, enteredPassword]);
+  }, [emailState.isValid, passwordState.isValid]);
 
   const emailChangeHandler = (event) => {
     dispatchEmail({
@@ -50,11 +66,12 @@ const Login = (props) => {
   };
 
   const passwordChangeHandler = (event) => {
-    setEnteredPassword(event.target.value);
+    dispatchPassword({
+      type: "USER_INPUT",
+      value: event.target.value,
+    });
   };
 
-  // Here we depend on a state when we update another state. Not good practice. We could combine the
-  // states into one so we can use the function format when we update, or use useRecuder.
   const validateEmailHandler = () => {
     dispatchEmail({
       type: "INPUT_BLUR",
@@ -63,12 +80,15 @@ const Login = (props) => {
   };
 
   const validatePasswordHandler = () => {
-    setPasswordIsValid(enteredPassword.trim().length > 6);
+    dispatchPassword({
+      type: "INPUT_BLUR",
+      value: passwordState.value,
+    });
   };
 
   const submitHandler = (event) => {
     event.preventDefault();
-    props.onLogin(emailState.value, enteredPassword);
+    props.onLogin(emailState.value, passwordState.value);
   };
 
   return (
@@ -90,14 +110,14 @@ const Login = (props) => {
         </div>
         <div
           className={`${classes.control} ${
-            passwordIsValid === false ? classes.invalid : ""
+            passwordState.isValid === false ? classes.invalid : ""
           }`}
         >
           <label htmlFor="password">Password</label>
           <input
             type="password"
             id="password"
-            value={enteredPassword}
+            value={passwordState.value}
             onChange={passwordChangeHandler}
             onBlur={validatePasswordHandler}
           />
